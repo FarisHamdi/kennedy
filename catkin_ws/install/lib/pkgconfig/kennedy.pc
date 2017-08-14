@@ -1,0 +1,8 @@
+prefix=/home/faris/catkin_ws/install
+
+Name: kennedy
+Description: Description of kennedy
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/faris/catkin_ws/install/lib 
+Requires: 

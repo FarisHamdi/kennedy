@@ -1,0 +1,8 @@
+prefix=/home/faris/catkin_ws/devel
+
+Name: kennedy
+Description: Description of kennedy
+Version: 0.0.0
+Cflags: -I/home/faris/catkin_ws/devel/include -I/home/faris/catkin_ws/src/kennedy/include
+Libs: -L/home/faris/catkin_ws/devel/lib -lkennedy
+Requires: roscpp rospy std_msgs message_runtime
