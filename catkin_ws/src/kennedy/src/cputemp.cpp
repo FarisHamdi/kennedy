@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 
 	int count = 0;
 
-	float tempfloat; 
+	float tempfloat;
 	string line;
 	ifstream temp;
 	temp.open("/sys/class/thermal/thermal_zone0/temp");
@@ -47,17 +47,16 @@ int main(int argc, char **argv)
 		std_msgs::Float32 cputemp;
 		stringstream ss;
 
-		ss << count << " The CPU temperature is: " << tempfloat << " C";
+		ss << count << " The CPU temperature is: " << tempfloat/1000 << " C";
 		cputemp.data = tempfloat;
 
-		ROS_INFO("%f", cputemp.data);
+		ROS_INFO("%s", ss.str().c_str());
 		cputemp_pub.publish(cputemp);
 
 		ros::spinOnce();
 		loop_rate.sleep();
 		++count;
 
-		
 	}
 
 	temp.close();
@@ -66,4 +65,4 @@ int main(int argc, char **argv)
 }
 
 
- 
+

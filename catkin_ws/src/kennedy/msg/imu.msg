@@ -1,3 +1,3 @@
-header header
-float64 kalmanx;
-float64 kalmany;
+Header header
+float32 kalmanx
+float32 kalmany

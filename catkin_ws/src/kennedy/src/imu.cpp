@@ -9,9 +9,9 @@
 #include "sensor.c"
 
 #include "ros/ros.h"
-#include "std_msgs/float64.h"
-#include "std_msgs/header.h"
-
+#include "std_msgs/Float32.h"
+#include "std_msgs/Header.h"
+#include "kennedy/imu.h"
 
 #define DT 0.02         // [s/loop] loop period. 20ms
 #define AA 0.97         // complementary filter constant
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
 	ros::init(argc, argv, "imu");
 	ros::NodeHandle n;
-	ros::Publisher imu_pub = n.advertise<std_msgs::Float64>("imu_data", 1000);
+	ros::Publisher imu_pub = n.advertise<kennedy::imu>("imu_data", 1000);
 	ros::Rate loop_rate(50);
 
 	float rate_gyr_y = 0.0;   // [deg/s]
@@ -142,14 +142,10 @@ int main(int argc, char *argv[])
 	//Kalman Filter
 	float kalmanX = kalmanFilterX(AccXangle, rate_gyr_x);
 	float kalmanY = kalmanFilterY(AccYangle, rate_gyr_y);
-	printf ("\033[22;31mkalmanX %7.3f  \033[22;36mkalmanY %7.3f\t\e[m",kalmanX,kalmanY);
 
 	//Complementary filter used to combine the accelerometer and gyro values.
 	CFangleX=AA*(CFangleX+rate_gyr_x*DT) +(1 - AA) * AccXangle;
 	CFangleY=AA*(CFangleY+rate_gyr_y*DT) +(1 - AA) * AccYangle;
-
-
-	printf ("GyroX  %7.3f \t AccXangle \e[m %7.3f \t \033[22;31mCFangleX %7.3f\033[0m\t GyroY  %7.3f \t AccYangle %7.3f \t \033[22;36mCFangleY %7.3f\t\033[0m\n",gyroXangle,AccXangle,CFangleX,gyroYangle,AccYangle,CFangleY);
 
 	//Each loop should be at least 20ms.
         while(mymillis() - startInt < (DT*1000))
@@ -157,6 +153,75 @@ int main(int argc, char *argv[])
             usleep(100);
         }
 
-	printf("Loop Time %d\t", mymillis()- startInt);
+	// data to message assignment along with publisher and ros_info
+
+	kennedy::imu imumsg;
+
+
+	imumsg.kalmanx = kalmanX;
+	imumsg.kalmany = kalmanY;
+
+	ROS_INFO("%f %f", imumsg.kalmanx, imumsg.kalmany);
+	imu_pub.publish(imumsg);
+	ros::spinOnce();
+	loop_rate.sleep();
+
     }
 }
+
+  float kalmanFilterX(float accAngle, float gyroRate)
+  {
+    float  y, S;
+    float K_0, K_1;
+
+    KFangleX += DT * (gyroRate - x_bias);
+
+    XP_00 +=  - DT * (XP_10 + XP_01) + Q_angle * DT;
+    XP_01 +=  - DT * XP_11;
+    XP_10 +=  - DT * XP_11;
+    XP_11 +=  + Q_gyro * DT;
+
+    y = accAngle - KFangleX;
+    S = XP_00 + R_angle;
+    K_0 = XP_00 / S;
+    K_1 = XP_10 / S;
+
+    KFangleX +=  K_0 * y;
+    x_bias  +=  K_1 * y;
+    XP_00 -= K_0 * XP_00;
+    XP_01 -= K_0 * XP_01;
+    XP_10 -= K_1 * XP_00;
+    XP_11 -= K_1 * XP_01;
+
+    return KFangleX;
+  }
+
+
+  float kalmanFilterY(float accAngle, float gyroRate)
+  {
+    float  y, S;
+    float K_0, K_1;
+
+
+    KFangleY += DT * (gyroRate - y_bias);
+
+    YP_00 +=  - DT * (YP_10 + YP_01) + Q_angle * DT;
+    YP_01 +=  - DT * YP_11;
+    YP_10 +=  - DT * YP_11;
+    YP_11 +=  + Q_gyro * DT;
+
+    y = accAngle - KFangleY;
+    S = YP_00 + R_angle;
+    K_0 = YP_00 / S;
+    K_1 = YP_10 / S;
+
+    KFangleY +=  K_0 * y;
+    y_bias  +=  K_1 * y;
+    YP_00 -= K_0 * YP_00;
+    YP_01 -= K_0 * YP_01;
+    YP_10 -= K_1 * YP_00;
+    YP_11 -= K_1 * YP_01;
+
+    return KFangleY;
+  }
+
